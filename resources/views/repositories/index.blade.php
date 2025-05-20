@@ -1,8 +1,8 @@
-<x-layouts.app :title="__('Dashboard')">
+<x-layouts.app :title="__('Repositories')">
     <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
         <!-- Header with title and create button -->
         <div class="flex items-center justify-between">
-            <h1 class="text-2xl font-semibold">Your Repositories</h1>
+            <h1 class="text-2xl font-semibold">Repositories</h1>
             <a href="{{ route('repositories.create') }}" class="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 5v14m-7-7h14"></path>
@@ -10,10 +10,6 @@
                 New Repository
             </a>
         </div>
-        
-        @php
-            $repositories = auth()->user()->allRepositories()->latest()->get();
-        @endphp
         
         @if($repositories->count() > 0)
             <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -58,6 +54,10 @@
                     </div>
                 </div>
                 @endforeach
+            </div>
+            
+            <div class="my-4">
+                {{ $repositories->links() }}
             </div>
         @else
             <div class="flex h-60 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-300 bg-neutral-50 text-center dark:border-neutral-700 dark:bg-neutral-800/50">

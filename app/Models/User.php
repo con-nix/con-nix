@@ -57,4 +57,36 @@ class User extends Authenticatable
             ->map(fn (string $name) => Str::of($name)->substr(0, 1))
             ->implode('');
     }
+
+    /**
+     * Get the repositories that belong to the user.
+     */
+    public function repositories()
+    {
+        return $this->hasMany(Repository::class);
+    }
+
+    /**
+     * Get the organizations owned by the user.
+     */
+    public function ownedOrganizations()
+    {
+        return $this->hasMany(Organization::class, 'owner_id');
+    }
+
+    /**
+     * Get all repositories accessible to the user
+     * (personal repositories and repositories from owned organizations)
+     */
+    public function allRepositories()
+    {
+        $personalRepos = $this->repositories();
+        
+        $orgIds = $this->ownedOrganizations()->pluck('id');
+        
+        return Repository::where(function ($query) use ($orgIds) {
+            $query->where('user_id', $this->id)
+                  ->orWhereIn('organization_id', $orgIds);
+        });
+    }
 }

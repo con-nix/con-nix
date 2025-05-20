@@ -60,6 +60,10 @@
         "test": [
             "@php artisan config:clear --ansi",
             "@php artisan test"
+        ],
+        "dusk": [
+            "@php artisan dusk:chrome-driver",
+            "@php artisan dusk"
         ]
     },
     "extra": {

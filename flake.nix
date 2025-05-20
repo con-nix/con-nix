@@ -51,7 +51,18 @@
               self'.packages.satis
               pkgs.bun
               pkgs.nodePackages.prettier
+              pkgs.chromium # Added for Laravel Dusk
+              pkgs.glib # Required by ChromeDriver
+              pkgs.chromedriver # Use Nix's ChromeDriver instead of Laravel's
+              pkgs.nss # Required for libnss3.so
+                            pkgs.sqlite
             ];
+
+            # Setup a suitable environment for Laravel Dusk
+            shellHook = ''
+              export DUSK_CHROME_BINARY=${pkgs.chromium}/bin/chromium
+              export DUSK_DRIVER_URL=http://localhost:9515
+            '';
           };
 
           checks = {

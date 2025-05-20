@@ -18,4 +18,12 @@ class ExampleTest extends DuskTestCase
                     ->assertSee('Laravel');
         });
     }
+    
+    public function testHomePage(): void
+    {
+        $this->browse(function (Browser $browser) {
+            $browser->visit(new Pages\HomePage)
+                    ->assertSee('Laravel');
+        });
+    }
 }
