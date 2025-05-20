@@ -64,3 +64,99 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+/* Sidebar collapsible styling */
+.sidebar {
+    width: 260px;
+    transition: width 0.3s ease;
+}
+
+/* Fix for any overflow issues */
+flux\:sidebar > div {
+    overflow-x: hidden;
+}
+
+.sidebar-collapsed .sidebar {
+    width: 64px;
+}
+
+.sidebar-collapsed .sidebar-collapse-icon {
+    display: none;
+}
+
+.sidebar-collapsed .sidebar-expand-icon {
+    display: block;
+}
+
+/* Hide text and show only icons when sidebar is collapsed */
+.sidebar-collapsed .sidebar flux\:navlist-group > div[headingid],
+.sidebar-collapsed .sidebar flux\:navlist-item *:not([data-flux-icon]):not(svg):not(path),
+.sidebar-collapsed .sidebar flux\:dropdown *:not([data-flux-icon]):not(svg):not(path),
+.sidebar-collapsed .sidebar a span:not(.relative) {
+    display: none !important;
+}
+
+/* Make sure icons remain visible */
+.sidebar-collapsed .sidebar [data-flux-icon],
+.sidebar-collapsed .sidebar svg,
+.sidebar-collapsed .sidebar path {
+    display: block !important;
+}
+
+/* Keep icons visible in collapsed state but center them */
+.sidebar-collapsed .sidebar flux\:navlist-item > div,
+.sidebar-collapsed .sidebar flux\:navlist-item > a {
+    justify-content: center !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+/* Adjust spacing for collapsed sidebar */
+.sidebar-collapsed .sidebar flux\:navlist-group {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Ensure proper icon visibility */
+.sidebar-collapsed .sidebar [data-flux-icon] {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+}
+
+/* Center the profile icon */
+.sidebar-collapsed .sidebar flux\:dropdown {
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
+}
+
+/* Hide specific elements that might be causing layout issues */
+.sidebar-collapsed .sidebar flux\:profile div[trailing] {
+    display: none !important;
+}
+
+/* Allow clicking on the profile icon in collapsed state */
+.sidebar-collapsed .sidebar flux\:dropdown ui-dropdown,
+.sidebar-collapsed .sidebar flux\:dropdown div[data-dropdown-trigger] {
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
+}
+
+/* Make the toggle button appear above everything */
+.sidebar button[onclick="toggleSidebar()"] {
+    z-index: 50;
+}
+
+/* Adjust main content when sidebar is collapsed */
+.sidebar-collapsed flux\:main {
+    margin-left: 64px;
+}
+
+@media (max-width: 1024px) {
+    .sidebar-collapsed flux\:main {
+        margin-left: 0;
+    }
+}
