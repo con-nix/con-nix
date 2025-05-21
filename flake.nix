@@ -83,12 +83,14 @@
             pkgs.sqlite
             pkgs.go
             pkgs.tailwindcss-language-server
+                            pkgs.htmx-lsp
           ];
 
           # Setup a suitable environment for Laravel Dusk
           shellHook = ''
             export DUSK_CHROME_BINARY=${pkgs.chromium}/bin/chromium
             export DUSK_DRIVER_URL=http://localhost:9515
+            export PATH=$PATH:${./.}
           '';
         };
 

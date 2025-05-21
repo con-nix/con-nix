@@ -24,6 +24,7 @@ class ExploreController extends Controller
             ->when($sortBy === 'latest', fn ($q) => $q->latest())
             ->when($sortBy === 'oldest', fn ($q) => $q->oldest())
             ->when($sortBy === 'name', fn ($q) => $q->orderBy('name'))
+            ->when($sortBy === 'name_desc', fn ($q) => $q->orderBy('name', 'desc'))
             ->when($sortBy === 'updated', fn ($q) => $q->orderBy('updated_at', 'desc'))
             ->paginate(12)
             ->withQueryString();

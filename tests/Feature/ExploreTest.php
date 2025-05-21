@@ -226,4 +226,432 @@ class ExploreTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Clear filters');
     }
+
+    // Advanced Security & Privacy Tests
+    public function test_explore_never_shows_private_repositories_even_with_url_manipulation()
+    {
+        $authUser = User::factory()->create();
+        $user = User::factory()->create();
+
+        // Create a public repository to ensure we have something to display
+        Repository::factory()->create([
+            'user_id' => $user->id,
+            'is_public' => true,
+            'name' => 'Public Repo',
+            'slug' => 'public-repo',
+        ]);
+
+        // Create private repositories 
+        Repository::factory()->create([
+            'user_id' => $user->id,
+            'is_public' => false,
+            'name' => 'UltraSecretProject',
+            'slug' => 'ultra-secret-project',
+            'description' => 'TopSecretCompanyProject',
+        ]);
+
+        Repository::factory()->create([
+            'user_id' => $authUser->id,
+            'is_public' => false,
+            'name' => 'MyPrivateRepo',
+            'slug' => 'my-private-repo',
+        ]);
+
+        // Test that we never see private repo content
+        $response = $this->actingAs($authUser)->get(route('explore'));
+        $response->assertStatus(200);
+        $response->assertDontSee('UltraSecretProject');
+        $response->assertDontSee('MyPrivateRepo');
+        $response->assertDontSee('TopSecretCompanyProject');
+        $response->assertSee('Public Repo');
+
+        // Try various parameter combinations that might expose private repos
+        $maliciousParams = [
+            ['search' => 'UltraSecret'],
+            ['search' => 'TopSecret'],
+            ['owner_type' => 'user', 'search' => 'UltraSecretProject'],
+            ['sort' => 'latest', 'search' => 'MyPrivate'],
+        ];
+
+        foreach ($maliciousParams as $params) {
+            $response = $this->actingAs($authUser)->get(route('explore', $params));
+            $response->assertStatus(200);
+            $response->assertDontSee('UltraSecretProject');
+            $response->assertDontSee('MyPrivateRepo');
+            $response->assertDontSee('TopSecretCompanyProject');
+            // These searches should return no results
+            $response->assertSee('No repositories found');
+        }
+    }
+
+    public function test_explore_requires_authentication()
+    {
+        Repository::factory()->create(['is_public' => true]);
+
+        $response = $this->get(route('explore'));
+
+        $response->assertRedirect(route('login'));
+    }
+
+    public function test_explore_shows_correct_repository_count_with_mixed_visibility()
+    {
+        $authUser = User::factory()->create();
+        $user = User::factory()->create();
+
+        // Create mix of public and private repositories
+        Repository::factory()->count(5)->create([
+            'user_id' => $user->id,
+            'is_public' => true,
+        ]);
+
+        Repository::factory()->count(3)->create([
+            'user_id' => $user->id,
+            'is_public' => false,
+        ]);
+
+        $response = $this->actingAs($authUser)->get(route('explore'));
+
+        $response->assertStatus(200);
+        $response->assertSee('5 public repositories');
+        $response->assertDontSee('8 public repositories');
+        $response->assertDontSee('3 public repositories');
+    }
+
+    // Edge Cases & Input Validation Tests
+    public function test_explore_search_handles_special_characters_safely()
+    {
+        $authUser = User::factory()->create();
+        $user = User::factory()->create();
+
+        Repository::factory()->create([
+            'user_id' => $user->id,
+            'is_public' => true,
+            'name' => 'C++ Project',
+            'slug' => 'cpp-project',
+            'description' => 'A C++ library for data structures & algorithms',
+        ]);
+
+        $specialCharSearches = [
+            'C++',
+            'data structures & algorithms',
+            '@#$%^&*',
+            '<script>alert("xss")</script>',
+            "'; DROP TABLE repositories; --",
+            '%',
+            '_',
+            "\\",
+        ];
+
+        foreach ($specialCharSearches as $search) {
+            $response = $this->actingAs($authUser)->get(route('explore', ['search' => $search]));
+            $response->assertStatus(200);
+
+            // Should find C++ project when searching for C++
+            if ($search === 'C++') {
+                $response->assertSee('C++ Project');
+            }
+
+            // Should find the project when searching for part of description
+            if (str_contains($search, 'data structures')) {
+                $response->assertSee('C++ Project');
+            }
+        }
+    }
+
+    public function test_explore_search_is_case_insensitive()
+    {
+        $authUser = User::factory()->create();
+        $user = User::factory()->create();
+
+        Repository::factory()->create([
+            'user_id' => $user->id,
+            'is_public' => true,
+            'name' => 'Laravel Framework',
+            'slug' => 'laravel-framework',
+            'description' => 'PHP Web Framework',
+        ]);
+
+        $searches = ['laravel', 'LARAVEL', 'Laravel', 'php', 'PHP', 'Php', 'FRAMEWORK'];
+
+        foreach ($searches as $search) {
+            $response = $this->actingAs($authUser)->get(route('explore', ['search' => $search]));
+            $response->assertStatus(200);
+            $response->assertSee('Laravel Framework');
+        }
+    }
+
+    public function test_explore_handles_repositories_with_null_descriptions()
+    {
+        $authUser = User::factory()->create();
+        $user = User::factory()->create();
+
+        Repository::factory()->create([
+            'user_id' => $user->id,
+            'is_public' => true,
+            'name' => 'No Description Repo',
+            'slug' => 'no-description-repo',
+            'description' => null,
+        ]);
+
+        $response = $this->actingAs($authUser)->get(route('explore'));
+
+        $response->assertStatus(200);
+        $response->assertSee('No Description Repo');
+        // Should not crash when rendering null description
+    }
+
+    public function test_explore_pagination_handles_edge_cases()
+    {
+        $authUser = User::factory()->create();
+        $user = User::factory()->create();
+
+        // Create exactly 12 repositories (pagination limit)
+        Repository::factory()->count(12)->create([
+            'user_id' => $user->id,
+            'is_public' => true,
+        ]);
+
+        // Test first page
+        $response = $this->actingAs($authUser)->get(route('explore', ['page' => 1]));
+        $response->assertStatus(200);
+        $response->assertDontSee('Previous');
+
+        // Test invalid page numbers
+        $invalidPages = [0, -1, 999, 'abc', ''];
+        foreach ($invalidPages as $page) {
+            $response = $this->actingAs($authUser)->get(route('explore', ['page' => $page]));
+            $response->assertStatus(200); // Should handle gracefully
+        }
+    }
+
+    // Complex Filtering & Sorting Tests
+    public function test_explore_combined_filters_work_correctly()
+    {
+        $authUser = User::factory()->create();
+        $user = User::factory()->create();
+        $organization = Organization::factory()->create(['owner_id' => $user->id]);
+
+        // Create test data
+        Repository::factory()->create([
+            'user_id' => $user->id,
+            'organization_id' => null,
+            'is_public' => true,
+            'name' => 'Laravel Personal Project',
+            'slug' => 'laravel-personal',
+            'created_at' => now()->subDays(1),
+        ]);
+
+        Repository::factory()->create([
+            'user_id' => null,
+            'organization_id' => $organization->id,
+            'is_public' => true,
+            'name' => 'Laravel Org Project',
+            'slug' => 'laravel-org',
+            'created_at' => now()->subDays(2),
+        ]);
+
+        Repository::factory()->create([
+            'user_id' => $user->id,
+            'organization_id' => null,
+            'is_public' => true,
+            'name' => 'React Personal Project',
+            'slug' => 'react-personal',
+            'created_at' => now()->subDays(3),
+        ]);
+
+        // Test search + owner type filter
+        $response = $this->actingAs($authUser)->get(route('explore', [
+            'search' => 'Laravel',
+            'owner_type' => 'user',
+        ]));
+        $response->assertStatus(200);
+        $response->assertSee('Laravel Personal Project');
+        $response->assertDontSee('Laravel Org Project');
+        $response->assertDontSee('React Personal Project');
+
+        // Test search + owner type + sort
+        $response = $this->actingAs($authUser)->get(route('explore', [
+            'search' => 'Laravel',
+            'owner_type' => 'organization',
+            'sort' => 'oldest',
+        ]));
+        $response->assertStatus(200);
+        $response->assertSee('Laravel Org Project');
+        $response->assertDontSee('Laravel Personal Project');
+    }
+
+    public function test_explore_sort_by_name_works_alphabetically()
+    {
+        $authUser = User::factory()->create();
+        $user = User::factory()->create();
+
+        Repository::factory()->create([
+            'user_id' => $user->id,
+            'is_public' => true,
+            'name' => 'Zebra Project',
+            'slug' => 'zebra-project',
+        ]);
+
+        Repository::factory()->create([
+            'user_id' => $user->id,
+            'is_public' => true,
+            'name' => 'Alpha Project',
+            'slug' => 'alpha-project',
+        ]);
+
+        Repository::factory()->create([
+            'user_id' => $user->id,
+            'is_public' => true,
+            'name' => 'Beta Project',
+            'slug' => 'beta-project',
+        ]);
+
+        // Test A-Z sorting
+        $response = $this->actingAs($authUser)->get(route('explore', ['sort' => 'name']));
+        $content = $response->getContent();
+
+        $alphaPos = strpos($content, 'Alpha Project');
+        $betaPos = strpos($content, 'Beta Project');
+        $zebraPos = strpos($content, 'Zebra Project');
+
+        $this->assertTrue($alphaPos < $betaPos);
+        $this->assertTrue($betaPos < $zebraPos);
+
+        // Test Z-A sorting
+        $response = $this->actingAs($authUser)->get(route('explore', ['sort' => 'name_desc']));
+        $content = $response->getContent();
+
+        $alphaPos = strpos($content, 'Alpha Project');
+        $betaPos = strpos($content, 'Beta Project');
+        $zebraPos = strpos($content, 'Zebra Project');
+
+        $this->assertTrue($zebraPos < $betaPos);
+        $this->assertTrue($betaPos < $alphaPos);
+    }
+
+    // Data Integrity & Relationship Tests
+    public function test_explore_handles_repositories_with_missing_owner_gracefully()
+    {
+        $authUser = User::factory()->create();
+        $user = User::factory()->create();
+
+        // Create a repository with a valid user, then simulate deletion by removing relationships
+        $repo = Repository::factory()->create([
+            'user_id' => $user->id,
+            'organization_id' => null,
+            'is_public' => true,
+            'name' => 'Orphaned Repo',
+            'slug' => 'orphaned-repo',
+        ]);
+
+        // Simulate user deletion by setting user_id to null (simulating cascade behavior)
+        $repo->update(['user_id' => null]);
+
+        $response = $this->actingAs($authUser)->get(route('explore'));
+
+        // Should not crash, but may or may not show the repo depending on implementation
+        $response->assertStatus(200);
+    }
+
+    public function test_explore_preserves_filters_across_pagination()
+    {
+        $authUser = User::factory()->create();
+        $user = User::factory()->create();
+
+        // Create 15 user repositories with searchable names
+        Repository::factory()->count(15)->create([
+            'user_id' => $user->id,
+            'organization_id' => null,
+            'is_public' => true,
+            'name' => function () {
+                return 'Laravel Project '.rand(1000, 9999);
+            },
+        ]);
+
+        $response = $this->actingAs($authUser)->get(route('explore', [
+            'search' => 'Laravel',
+            'owner_type' => 'user',
+            'sort' => 'latest',
+            'page' => 2,
+        ]));
+
+        $response->assertStatus(200);
+        // Check that pagination links preserve the filters
+        $content = $response->getContent();
+        $this->assertStringContainsString('search=Laravel', $content);
+        $this->assertStringContainsString('owner_type=user', $content);
+        $this->assertStringContainsString('sort=latest', $content);
+    }
+
+    // Performance & Load Tests
+    public function test_explore_performs_efficiently_with_large_dataset()
+    {
+        $authUser = User::factory()->create();
+        $users = User::factory()->count(10)->create();
+
+        // Create 100 repositories across multiple users
+        foreach ($users as $user) {
+            Repository::factory()->count(10)->create([
+                'user_id' => $user->id,
+                'is_public' => true,
+            ]);
+        }
+
+        $startTime = microtime(true);
+
+        $response = $this->actingAs($authUser)->get(route('explore'));
+
+        $endTime = microtime(true);
+        $executionTime = $endTime - $startTime;
+
+        $response->assertStatus(200);
+        // Should complete within reasonable time (2 seconds)
+        $this->assertLessThan(2.0, $executionTime, 'Explore page should load quickly even with many repositories');
+    }
+
+    // Business Logic Tests
+    public function test_explore_shows_correct_owner_information_for_transferred_repositories()
+    {
+        $authUser = User::factory()->create();
+        $originalOwner = User::factory()->create(['name' => 'Original Owner']);
+        $organization = Organization::factory()->create([
+            'owner_id' => $originalOwner->id,
+            'name' => 'Test Organization',
+        ]);
+
+        // Create repository originally owned by user, then transferred to organization
+        $repository = Repository::factory()->create([
+            'user_id' => null,
+            'organization_id' => $organization->id,
+            'is_public' => true,
+            'name' => 'Transferred Repo',
+            'slug' => 'transferred-repo',
+        ]);
+
+        $response = $this->actingAs($authUser)->get(route('explore'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Transferred Repo');
+        $response->assertSee('Test Organization');
+        $response->assertDontSee('Original Owner'); // Should show org, not original user
+    }
+
+    public function test_explore_empty_search_returns_all_public_repositories()
+    {
+        $authUser = User::factory()->create();
+        $user = User::factory()->create();
+
+        Repository::factory()->count(5)->create([
+            'user_id' => $user->id,
+            'is_public' => true,
+        ]);
+
+        $emptySearchValues = ['', '   ', null];
+
+        foreach ($emptySearchValues as $search) {
+            $response = $this->actingAs($authUser)->get(route('explore', ['search' => $search]));
+            $response->assertStatus(200);
+            $response->assertSee('5 public repositories');
+        }
+    }
 }

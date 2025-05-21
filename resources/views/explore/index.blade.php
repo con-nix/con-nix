@@ -55,7 +55,8 @@
                         >
                             <option value="latest" {{ $sortBy === 'latest' ? 'selected' : '' }}>Latest</option>
                             <option value="updated" {{ $sortBy === 'updated' ? 'selected' : '' }}>Recently updated</option>
-                            <option value="name" {{ $sortBy === 'name' ? 'selected' : '' }}>Name</option>
+                            <option value="name" {{ $sortBy === 'name' ? 'selected' : '' }}>Name A-Z</option>
+                            <option value="name_desc" {{ $sortBy === 'name_desc' ? 'selected' : '' }}>Name Z-A</option>
                             <option value="oldest" {{ $sortBy === 'oldest' ? 'selected' : '' }}>Oldest</option>
                         </select>
                     </div>
