@@ -28,6 +28,9 @@
                     </a>
                 @endcan
                 @can('delete', $repository)
+                    <a href="{{ route('repositories.transfer.form', $repository) }}" class="inline-flex items-center rounded-md border border-orange-300 bg-white px-4 py-2 text-sm font-medium text-orange-700 shadow-sm hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 dark:border-orange-700 dark:bg-neutral-800 dark:text-orange-400 dark:hover:bg-orange-900/30 dark:focus:ring-offset-neutral-800">
+                        Transfer
+                    </a>
                     <form action="{{ route('repositories.destroy', $repository) }}" method="POST" class="inline">
                         @csrf
                         @method('DELETE')

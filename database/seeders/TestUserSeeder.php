@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class TestUserSeeder extends Seeder
@@ -18,7 +17,7 @@ class TestUserSeeder extends Seeder
             'email' => 'test@example.com',
             'password' => bcrypt('password'),
         ]);
-        
+
         // Create an organization
         $organization = \App\Models\Organization::create([
             'name' => 'Test Organization',
@@ -26,7 +25,7 @@ class TestUserSeeder extends Seeder
             'description' => 'This is a test organization',
             'owner_id' => 1,
         ]);
-        
+
         // Create a personal repository for the user
         \App\Models\Repository::create([
             'name' => 'Personal Test Repo',
@@ -35,7 +34,7 @@ class TestUserSeeder extends Seeder
             'is_public' => true,
             'user_id' => 1,
         ]);
-        
+
         // Create an organization repository
         \App\Models\Repository::create([
             'name' => 'Organization Test Repo',

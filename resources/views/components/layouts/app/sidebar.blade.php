@@ -3,16 +3,13 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-white dark:bg-zinc-800">
+    <body class="min-h-screen bg-white dark:bg-zinc-800" id="app-body">
         <flux:sidebar sticky stashable class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 transition-all duration-300 sidebar">
             <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
             <flux:tooltip content="Toggle Sidebar (Ctrl + .)" position="right">
-                <button onclick="toggleSidebar()" class="hidden lg:flex items-center justify-center p-1.5 rounded-lg text-zinc-700 hover:bg-zinc-200 dark:text-zinc-300 dark:hover:bg-zinc-800 absolute top-4 right-0 transform translate-x-1/2 z-50 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 shadow-sm">
-                    <svg class="sidebar-collapse-icon w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <button onclick="toggleSidebar()" class="hidden lg:flex items-center justify-center p-1.5 rounded-lg text-zinc-700 hover:bg-zinc-200 dark:text-zinc-300 dark:hover:bg-zinc-800 absolute top-4 right-0 transform translate-x-1/2 z-50 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 shadow-sm transition-transform duration-300">
+                    <svg class="sidebar-toggle-icon w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M15 18l-6-6 6-6" />
-                    </svg>
-                    <svg class="sidebar-expand-icon w-5 h-5 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 18l6-6-6-6" />
                     </svg>
                 </button>
             </flux:tooltip>
@@ -24,14 +21,17 @@
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('Platform')" class="grid">
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
+                    <flux:navlist.item icon="compass" :href="route('explore')" :current="request()->routeIs('explore')" wire:navigate>{{ __('Explore') }}</flux:navlist.item>
+                    <flux:navlist.item icon="folder-git-2" :href="route('repositories.index')" :current="request()->routeIs('repositories.*')" wire:navigate>{{ __('Repositories') }}</flux:navlist.item>
+                    <flux:navlist.item icon="users" :href="route('organizations.index')" :current="request()->routeIs('organizations.*')" wire:navigate>{{ __('Organizations') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 
             <flux:spacer />
 
             <flux:navlist variant="outline">
-                <flux:navlist.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                {{ __('Repository') }}
+                <flux:navlist.item icon="code-bracket" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
+                {{ __('GitHub') }}
                 </flux:navlist.item>
 
                 <flux:navlist.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
@@ -138,5 +138,19 @@
         {{ $slot }}
 
         @fluxScripts
+        <script>
+            function toggleSidebar() {
+                const body = document.getElementById('app-body');
+                const toggleIcon = document.querySelector('.sidebar-toggle-icon');
+                
+                body.classList.toggle('sidebar-collapsed');
+                
+                if (body.classList.contains('sidebar-collapsed')) {
+                    toggleIcon.innerHTML = '<path d="M9 18l6-6-6-6" />';
+                } else {
+                    toggleIcon.innerHTML = '<path d="M15 18l-6-6 6-6" />';
+                }
+            }
+        </script>
     </body>
 </html>

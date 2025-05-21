@@ -69,8 +69,13 @@
                 
                 <!-- Hidden field for organization_id -->
                 <input type="hidden" name="organization_id" id="organization_id" value="{{ old('organization_id') }}">
-                <x-input-error class="mt-2" :messages="$errors->get('owner_type')" />
-                <x-input-error class="mt-2" :messages="$errors->get('organization_id')" />
+                
+                @if($errors->has('owner_type') || $errors->has('organization_id'))
+                    <div class="mt-2 rounded-md bg-red-50 p-2 dark:bg-red-900/30">
+                        <x-input-error class="mt-0" :messages="$errors->get('owner_type')" />
+                        <x-input-error class="mt-0" :messages="$errors->get('organization_id')" />
+                    </div>
+                @endif
             </div>
 
             <div class="flex items-center justify-end gap-4">
@@ -91,17 +96,25 @@
             const orgRadios = document.querySelectorAll('input[name="owner_type"][value="organization"]');
             const orgIdInput = document.getElementById('organization_id');
             
-            orgRadios.forEach(radio => {
-                radio.addEventListener('change', function() {
-                    if (this.checked) {
-                        orgIdInput.value = this.getAttribute('data-org-id');
-                    }
-                });
+            // Initialize organization_id based on the currently selected radio
+            function updateOrganizationId() {
+                const selectedOrgRadio = document.querySelector('input[name="owner_type"][value="organization"]:checked');
                 
-                // Set initial value if radio is checked
-                if (radio.checked) {
-                    orgIdInput.value = radio.getAttribute('data-org-id');
+                if (selectedOrgRadio) {
+                    orgIdInput.value = selectedOrgRadio.getAttribute('data-org-id');
+                    console.log('Setting organization ID to:', orgIdInput.value);
+                } else if (document.getElementById('owner_user').checked) {
+                    orgIdInput.value = '';
+                    console.log('Clearing organization ID');
                 }
+            }
+            
+            // Set initial value when page loads
+            updateOrganizationId();
+            
+            // Update when any radio button changes
+            orgRadios.forEach(radio => {
+                radio.addEventListener('change', updateOrganizationId);
             });
             
             // Clear organization_id when user selects personal repository
@@ -109,6 +122,7 @@
             userRadio.addEventListener('change', function() {
                 if (this.checked) {
                     orgIdInput.value = '';
+                    console.log('Clearing organization ID - user selected');
                 }
             });
         });

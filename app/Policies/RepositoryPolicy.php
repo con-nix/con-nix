@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Repository;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class RepositoryPolicy
 {
@@ -32,7 +31,7 @@ class RepositoryPolicy
         }
 
         // Check if the repository belongs to an organization owned by the user
-        if ($repository->organization_id && 
+        if ($repository->organization_id &&
             $repository->organization->owner_id === $user->id) {
             return true;
         }
@@ -59,7 +58,7 @@ class RepositoryPolicy
         }
 
         // Check if the repository belongs to an organization owned by the user
-        if ($repository->organization_id && 
+        if ($repository->organization_id &&
             $repository->organization->owner_id === $user->id) {
             return true;
         }
@@ -78,7 +77,7 @@ class RepositoryPolicy
         }
 
         // Check if the repository belongs to an organization owned by the user
-        if ($repository->organization_id && 
+        if ($repository->organization_id &&
             $repository->organization->owner_id === $user->id) {
             return true;
         }

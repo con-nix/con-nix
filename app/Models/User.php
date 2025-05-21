@@ -81,12 +81,12 @@ class User extends Authenticatable
     public function allRepositories()
     {
         $personalRepos = $this->repositories();
-        
+
         $orgIds = $this->ownedOrganizations()->pluck('id');
-        
+
         return Repository::where(function ($query) use ($orgIds) {
             $query->where('user_id', $this->id)
-                  ->orWhereIn('organization_id', $orgIds);
+                ->orWhereIn('organization_id', $orgIds);
         });
     }
 }
