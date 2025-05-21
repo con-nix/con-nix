@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Organization;
+use App\Models\Repository;
+use App\Observers\OrganizationObserver;
+use App\Observers\RepositoryObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Repository::observe(RepositoryObserver::class);
+        Organization::observe(OrganizationObserver::class);
     }
 }

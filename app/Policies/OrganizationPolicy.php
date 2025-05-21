@@ -21,7 +21,7 @@ class OrganizationPolicy
     public function view(User $user, Organization $organization): bool
     {
         // If the organization is owned by the user or they are a member
-        return $organization->owner_id === $user->id;
+        return $organization->owner_id === $user->id || $organization->hasMember($user);
     }
 
     /**
@@ -38,8 +38,8 @@ class OrganizationPolicy
      */
     public function update(User $user, Organization $organization): bool
     {
-        // Only the owner can update the organization
-        return $organization->owner_id === $user->id;
+        // Only the owner and admins can update the organization
+        return $organization->owner_id === $user->id || $organization->hasAdmin($user);
     }
 
     /**
@@ -65,5 +65,32 @@ class OrganizationPolicy
     public function forceDelete(User $user, Organization $organization): bool
     {
         return $this->delete($user, $organization);
+    }
+
+    /**
+     * Determine whether the user can view members of the organization.
+     */
+    public function viewMembers(User $user, Organization $organization): bool
+    {
+        // Any member can view other members
+        return $organization->owner_id === $user->id || $organization->hasMember($user);
+    }
+
+    /**
+     * Determine whether the user can manage members (add/remove/update).
+     */
+    public function manageMembers(User $user, Organization $organization): bool
+    {
+        // Only owners and admins can manage members
+        return $organization->owner_id === $user->id || $organization->hasAdmin($user);
+    }
+
+    /**
+     * Determine whether the user can invite members to the organization.
+     */
+    public function inviteMembers(User $user, Organization $organization): bool
+    {
+        // Only owners and admins can invite members
+        return $organization->owner_id === $user->id || $organization->hasAdmin($user);
     }
 }

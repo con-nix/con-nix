@@ -74,6 +74,7 @@
             php.packages.psalm
             pkgs.phpunit
             self'.packages.satis
+                            pkgs.phpactor
             pkgs.bun
             pkgs.nodePackages.prettier
             pkgs.chromium # Added for Laravel Dusk
@@ -90,7 +91,6 @@
           shellHook = ''
             export DUSK_CHROME_BINARY=${pkgs.chromium}/bin/chromium
             export DUSK_DRIVER_URL=http://localhost:9515
-            export PATH=$PATH:${./.}
           '';
         };
 
