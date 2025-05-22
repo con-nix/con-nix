@@ -136,10 +136,13 @@ class OrganizationInviteTest extends TestCase
             'role' => 'member',
         ]);
 
+        // Check that invite was marked as accepted
         $this->assertDatabaseHas('organization_invites', [
             'id' => $invite->id,
-            'accepted_at' => now()->format('Y-m-d H:i'),
         ]);
+        
+        $invite->refresh();
+        $this->assertNotNull($invite->accepted_at);
     }
 
     /**

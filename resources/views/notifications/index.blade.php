@@ -12,41 +12,42 @@
                 @if(auth()->user()->unread_notifications_count > 0)
                     <form action="{{ route('notifications.mark-all-read') }}" method="POST" class="inline">
                         @csrf
-                        <button type="submit" class="inline-flex items-center rounded-md border border-indigo-500 bg-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        <flux:button type="submit" variant="primary" size="sm">
                             Mark All as Read
-                        </button>
+                        </flux:button>
                     </form>
                 @endif
             </div>
         </div>
 
         <!-- Filter Tabs -->
-        <div class="border-b border-neutral-200 dark:border-neutral-700">
+        <div class="border-b border-zinc-200 dark:border-zinc-700">
             <nav class="-mb-px flex space-x-8">
                 <a href="{{ route('notifications.index', ['filter' => 'all']) }}" 
-                   class="py-2 px-1 border-b-2 font-medium text-sm {{ $filter === 'all' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300 dark:text-neutral-400 dark:hover:text-neutral-300' }}">
+                   class="py-2 px-1 border-b-2 font-medium text-sm {{ $filter === 'all' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300 dark:text-zinc-400 dark:hover:text-zinc-300' }}">
                     All
                 </a>
                 <a href="{{ route('notifications.index', ['filter' => 'unread']) }}" 
-                   class="py-2 px-1 border-b-2 font-medium text-sm {{ $filter === 'unread' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300 dark:text-neutral-400 dark:hover:text-neutral-300' }}">
+                   class="py-2 px-1 border-b-2 font-medium text-sm {{ $filter === 'unread' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300 dark:text-zinc-400 dark:hover:text-zinc-300' }} flex items-center gap-2">
                     Unread
                     @if(auth()->user()->unread_notifications_count > 0)
-                        <span class="ml-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                        <flux:badge color="red" size="sm">
                             {{ auth()->user()->unread_notifications_count }}
-                        </span>
+                        </flux:badge>
                     @endif
                 </a>
                 <a href="{{ route('notifications.index', ['filter' => 'read']) }}" 
-                   class="py-2 px-1 border-b-2 font-medium text-sm {{ $filter === 'read' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300 dark:text-neutral-400 dark:hover:text-neutral-300' }}">
+                   class="py-2 px-1 border-b-2 font-medium text-sm {{ $filter === 'read' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300 dark:text-zinc-400 dark:hover:text-zinc-300' }}">
                     Read
                 </a>
             </nav>
         </div>
 
         <!-- Notifications List -->
-        <div class="space-y-2">
+        <div class="space-y-3">
             @forelse($notifications as $notification)
-                <div class="flex items-start p-4 rounded-lg border {{ $notification->isRead() ? 'bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700' : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700' }}">
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 {{ $notification->isRead() ? '' : 'ring-2 ring-blue-500/20 bg-blue-50/50 dark:bg-blue-900/10' }}">
+                    <div class="flex items-start gap-4">
                     <div class="flex-shrink-0">
                         @switch($notification->type)
                             @case('user_follow')
@@ -88,40 +89,41 @@
                                 </p>
                             </div>
                             
-                            <div class="ml-2 flex items-center space-x-2">
+                            <div class="ml-2 flex items-center gap-2">
                                 @if(!$notification->isRead())
                                     <form action="{{ route('notifications.read', $notification) }}" method="POST" class="inline">
                                         @csrf
-                                        <button type="submit" class="text-xs text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
+                                        <flux:button type="submit" variant="ghost" size="xs">
                                             Mark as read
-                                        </button>
+                                        </flux:button>
                                     </form>
                                 @else
                                     <form action="{{ route('notifications.unread', $notification) }}" method="POST" class="inline">
                                         @csrf
-                                        <button type="submit" class="text-xs text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-300">
+                                        <flux:button type="submit" variant="ghost" size="xs">
                                             Mark as unread
-                                        </button>
+                                        </flux:button>
                                     </form>
                                 @endif
                                 
                                 <form action="{{ route('notifications.destroy', $notification) }}" method="POST" class="inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-xs text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300" onclick="return confirm('Are you sure you want to delete this notification?')">
+                                    <flux:button type="submit" variant="ghost" size="xs" class="text-red-600 hover:text-red-700" onclick="return confirm('Are you sure you want to delete this notification?')">
                                         Delete
-                                    </button>
+                                    </flux:button>
                                 </form>
                             </div>
                         </div>
                         
                         @if($notification->action_url)
-                            <div class="mt-2">
-                                <a href="{{ route('notifications.read', $notification) }}" class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-300 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50">
+                            <div class="mt-3">
+                                <flux:button :href="route('notifications.read', $notification)" variant="filled" size="xs">
                                     View
-                                </a>
+                                </flux:button>
                             </div>
                         @endif
+                    </div>
                     </div>
                 </div>
             @empty

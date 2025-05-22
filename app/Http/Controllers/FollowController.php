@@ -56,7 +56,7 @@ class FollowController extends Controller
     public function followers(User $user)
     {
         $followers = $user->followers()
-            ->select(['id', 'name', 'email', 'created_at'])
+            ->select(['users.id', 'users.name', 'users.email', 'users.created_at'])
             ->paginate(20);
 
         return view('users.followers', compact('user', 'followers'));
@@ -68,7 +68,7 @@ class FollowController extends Controller
     public function following(User $user)
     {
         $following = $user->following()
-            ->select(['id', 'name', 'email', 'created_at'])
+            ->select(['users.id', 'users.name', 'users.email', 'users.created_at'])
             ->paginate(20);
 
         return view('users.following', compact('user', 'following'));

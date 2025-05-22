@@ -17,66 +17,55 @@
                 </p>
             </div>
             <div class="flex gap-2">
-                <a href="{{ route('organizations.show', $organization) }}" class="inline-flex items-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:focus:ring-offset-neutral-800">
+                <flux:button :href="route('organizations.show', $organization)" variant="ghost">
                     Back to Organization
-                </a>
+                </flux:button>
                 @can('inviteMembers', $organization)
-                    <a href="{{ route('organizations.invites.create', $organization) }}" class="inline-flex items-center rounded-md border border-indigo-500 bg-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:hover:bg-indigo-600 dark:focus:ring-offset-neutral-800">
+                    <flux:button :href="route('organizations.invites.create', $organization)" variant="primary" icon="plus">
                         Invite Member
-                    </a>
+                    </flux:button>
                 @endcan
             </div>
         </div>
 
         <!-- Members List -->
-        <div class="rounded-md bg-white p-4 shadow-sm dark:bg-neutral-800">
-            <h2 class="text-lg font-semibold">Members</h2>
+        <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-semibold">Members</h2>
+                <flux:badge color="blue">{{ count($members) + 1 }} members</flux:badge>
+            </div>
             
-            <div class="mt-4 overflow-hidden rounded-md border border-neutral-200 dark:border-neutral-700">
-                <table class="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-                    <thead class="bg-neutral-50 dark:bg-neutral-900">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-zinc-200 dark:divide-zinc-700">
+                    <thead class="bg-zinc-50 dark:bg-zinc-800">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                                User
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                                Role
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                                Joined
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                                Actions
-                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">User</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Role</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Joined</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-neutral-200 bg-white dark:divide-neutral-700 dark:bg-neutral-800">
+                    <tbody class="bg-white dark:bg-zinc-900 divide-y divide-zinc-200 dark:divide-zinc-700">
                         <!-- Organization Owner -->
                         <tr>
-                            <td class="whitespace-nowrap px-6 py-4">
-                                <div class="flex items-center">
-                                    <div class="h-8 w-8 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
-                                        <span class="text-xs font-semibold text-indigo-600">{{ $organization->owner->initials() }}</span>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-zinc-200 dark:bg-zinc-700 rounded-full flex items-center justify-center text-sm font-medium">
+                                        {{ substr($organization->owner->name, 0, 1) }}
                                     </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-neutral-900 dark:text-neutral-200">
-                                            {{ $organization->owner->name }}
-                                        </div>
-                                        <div class="text-sm text-neutral-500 dark:text-neutral-400">
-                                            {{ $organization->owner->email }}
-                                        </div>
+                                    <div>
+                                        <div class="font-medium">{{ $organization->owner->name }}</div>
+                                        <div class="text-sm text-zinc-500">{{ $organization->owner->email }}</div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="whitespace-nowrap px-6 py-4 text-sm">
-                                <span class="inline-flex rounded-full bg-indigo-100 px-2 py-1 text-xs font-semibold text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
-                                    Owner
-                                </span>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <flux:badge color="indigo" size="sm">Owner</flux:badge>
                             </td>
-                            <td class="whitespace-nowrap px-6 py-4 text-sm text-neutral-500 dark:text-neutral-400">
-                                {{ $organization->created_at->format('M d, Y') }}
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-zinc-500">{{ $organization->created_at->format('M d, Y') }}</div>
                             </td>
-                            <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                            <td class="px-6 py-4 whitespace-nowrap text-right">
                                 <!-- No actions for owner -->
                             </td>
                         </tr>
@@ -85,49 +74,46 @@
                         @foreach($members as $member)
                             @if($member->user_id != $organization->owner_id)
                                 <tr>
-                                    <td class="whitespace-nowrap px-6 py-4">
-                                        <div class="flex items-center">
-                                            <div class="h-8 w-8 flex-shrink-0 rounded-full bg-neutral-100 flex items-center justify-center">
-                                                <span class="text-xs font-semibold text-neutral-600">{{ $member->user->initials() }}</span>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 bg-zinc-200 dark:bg-zinc-700 rounded-full flex items-center justify-center text-sm font-medium">
+                                                {{ substr($member->user->name, 0, 1) }}
                                             </div>
-                                            <div class="ml-4">
-                                                <div class="text-sm font-medium text-neutral-900 dark:text-neutral-200">
-                                                    {{ $member->user->name }}
-                                                </div>
-                                                <div class="text-sm text-neutral-500 dark:text-neutral-400">
-                                                    {{ $member->user->email }}
-                                                </div>
+                                            <div>
+                                                <div class="font-medium">{{ $member->user->name }}</div>
+                                                <div class="text-sm text-zinc-500">{{ $member->user->email }}</div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm">
+                                    <td class="px-6 py-4 whitespace-nowrap">
                                         @can('manageMembers', $organization)
                                             <form action="{{ route('organizations.members.update', [$organization, $member]) }}" method="POST" class="inline">
                                                 @csrf
                                                 @method('PATCH')
-                                                <select name="role" onchange="this.form.submit()" class="rounded-md border-neutral-300 text-xs dark:border-neutral-700 dark:bg-neutral-900">
+                                                <flux:select name="role" onchange="this.form.submit()" size="sm">
                                                     <option value="admin" {{ $member->role === 'admin' ? 'selected' : '' }}>Admin</option>
                                                     <option value="member" {{ $member->role === 'member' ? 'selected' : '' }}>Member</option>
                                                     <option value="viewer" {{ $member->role === 'viewer' ? 'selected' : '' }}>Viewer</option>
-                                                </select>
+                                                </flux:select>
                                             </form>
                                         @else
-                                            <span class="inline-flex rounded-full {{ $member->role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' : ($member->role === 'member' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400') }} px-2 py-1 text-xs font-semibold">
-                                                {{ ucfirst($member->role) }}
-                                            </span>
+                                            @php
+                                                $badgeColor = $member->role === 'admin' ? 'purple' : ($member->role === 'member' ? 'green' : 'blue');
+                                            @endphp
+                                            <flux:badge color="{{ $badgeColor }}" size="sm">{{ ucfirst($member->role) }}</flux:badge>
                                         @endcan
                                     </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-neutral-500 dark:text-neutral-400">
-                                        {{ $member->created_at->format('M d, Y') }}
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-zinc-500">{{ $member->created_at->format('M d, Y') }}</div>
                                     </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                                    <td class="px-6 py-4 whitespace-nowrap text-right">
                                         @if(auth()->id() === $member->user_id || auth()->user()->can('manageMembers', $organization))
                                             <form action="{{ route('organizations.members.destroy', [$organization, $member]) }}" method="POST" class="inline">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300" onclick="return confirm('Are you sure you want to remove this member?')">
+                                                <flux:button type="submit" variant="ghost" size="xs" class="text-red-600 hover:text-red-700" onclick="return confirm('Are you sure you want to remove this member?')">
                                                     {{ auth()->id() === $member->user_id ? 'Leave' : 'Remove' }}
-                                                </button>
+                                                </flux:button>
                                             </form>
                                         @endif
                                     </td>
@@ -142,54 +128,48 @@
         <!-- Pending Invites -->
         @can('inviteMembers', $organization)
             @if(count($invites) > 0)
-                <div class="rounded-md bg-white p-4 shadow-sm dark:bg-neutral-800">
-                    <h2 class="text-lg font-semibold">Pending Invites</h2>
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-lg font-semibold">Pending Invites</h2>
+                        <flux:badge color="amber">{{ count($invites) }} pending</flux:badge>
+                    </div>
                     
-                    <div class="mt-4 overflow-hidden rounded-md border border-neutral-200 dark:border-neutral-700">
-                        <table class="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-                            <thead class="bg-neutral-50 dark:bg-neutral-900">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-zinc-200 dark:divide-zinc-700">
+                            <thead class="bg-zinc-50 dark:bg-zinc-800">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                                        Email
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                                        Role
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                                        Sent By
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                                        Expires
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                                        Actions
-                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Email</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Role</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Sent By</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Expires</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-neutral-200 bg-white dark:divide-neutral-700 dark:bg-neutral-800">
+                            <tbody class="bg-white dark:bg-zinc-900 divide-y divide-zinc-200 dark:divide-zinc-700">
                                 @foreach($invites as $invite)
                                     <tr>
-                                        <td class="whitespace-nowrap px-6 py-4 text-sm text-neutral-900 dark:text-neutral-200">
-                                            {{ $invite->email }}
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="font-medium">{{ $invite->email }}</div>
                                         </td>
-                                        <td class="whitespace-nowrap px-6 py-4 text-sm">
-                                            <span class="inline-flex rounded-full {{ $invite->role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' : ($invite->role === 'member' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400') }} px-2 py-1 text-xs font-semibold">
-                                                {{ ucfirst($invite->role) }}
-                                            </span>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            @php
+                                                $badgeColor = $invite->role === 'admin' ? 'purple' : ($invite->role === 'member' ? 'green' : 'blue');
+                                            @endphp
+                                            <flux:badge color="{{ $badgeColor }}" size="sm">{{ ucfirst($invite->role) }}</flux:badge>
                                         </td>
-                                        <td class="whitespace-nowrap px-6 py-4 text-sm text-neutral-500 dark:text-neutral-400">
-                                            {{ $invite->sender->name }}
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-zinc-500">{{ $invite->sender->name }}</div>
                                         </td>
-                                        <td class="whitespace-nowrap px-6 py-4 text-sm text-neutral-500 dark:text-neutral-400">
-                                            {{ $invite->expires_at->format('M d, Y') }}
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-zinc-500">{{ $invite->expires_at->format('M d, Y') }}</div>
                                         </td>
-                                        <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                                        <td class="px-6 py-4 whitespace-nowrap text-right">
                                             <form action="{{ route('organizations.invites.cancel', [$organization, $invite]) }}" method="POST" class="inline">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300" onclick="return confirm('Are you sure you want to cancel this invitation?')">
+                                                <flux:button type="submit" variant="ghost" size="xs" class="text-red-600 hover:text-red-700" onclick="return confirm('Are you sure you want to cancel this invitation?')">
                                                     Cancel
-                                                </button>
+                                                </flux:button>
                                             </form>
                                         </td>
                                     </tr>

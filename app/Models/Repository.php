@@ -70,6 +70,14 @@ class Repository extends Model
     }
 
     /**
+     * Get the owner of the repository (either user or organization).
+     */
+    public function getOwner()
+    {
+        return $this->owner();
+    }
+
+    /**
      * Get the owner name of the repository.
      */
     public function getOwnerNameAttribute(): string

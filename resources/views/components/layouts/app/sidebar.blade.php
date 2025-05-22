@@ -5,6 +5,7 @@
     </head>
     <body class="min-h-screen bg-white dark:bg-zinc-800" id="app-body">
         <flux:sidebar sticky stashable class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 transition-all duration-300 sidebar">
+            @auth
             <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
             <flux:tooltip content="Toggle Sidebar (Ctrl + .)" position="right">
                 <button onclick="toggleSidebar()" class="hidden lg:flex items-center justify-center p-1.5 rounded-lg text-zinc-700 hover:bg-zinc-200 dark:text-zinc-300 dark:hover:bg-zinc-800 absolute top-4 right-0 transform translate-x-1/2 z-50 border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 shadow-sm transition-transform duration-300">
@@ -13,6 +14,7 @@
                     </svg>
                 </button>
             </flux:tooltip>
+            @endauth
 
             <a href="{{ route('dashboard') }}" class="me-5 flex items-center space-x-2 rtl:space-x-reverse" wire:navigate>
                 <x-app-logo />
@@ -24,6 +26,19 @@
                     <flux:navlist.item icon="compass" :href="route('explore')" :current="request()->routeIs('explore')" wire:navigate>{{ __('Explore') }}</flux:navlist.item>
                     <flux:navlist.item icon="folder-git-2" :href="route('repositories.index')" :current="request()->routeIs('repositories.*')" wire:navigate>{{ __('Repositories') }}</flux:navlist.item>
                     <flux:navlist.item icon="users" :href="route('organizations.index')" :current="request()->routeIs('organizations.*')" wire:navigate>{{ __('Organizations') }}</flux:navlist.item>
+                    @auth
+                    <flux:navlist.item icon="bell" :href="route('notifications.index')" :current="request()->routeIs('notifications.*')" wire:navigate>
+                        <div class="flex items-center justify-between w-full">
+                            <span>{{ __('Notifications') }}</span>
+                            @if(auth()->user()->unreadNotifications()->count() > 0)
+                                <flux:badge color="red" size="sm">
+                                    {{ auth()->user()->unreadNotifications()->count() }}
+                                </flux:badge>
+                            @endif
+                        </div>
+                    </flux:navlist.item>
+                    <flux:navlist.item icon="chart-bar" :href="route('feed')" :current="request()->routeIs('feed')" wire:navigate>{{ __('Activity Feed') }}</flux:navlist.item>
+                    @endauth
                 </flux:navlist.group>
             </flux:navlist>
 
@@ -40,6 +55,7 @@
             </flux:navlist>
 
             <!-- Desktop User Menu -->
+            @auth
             <flux:dropdown position="bottom" align="start">
                 <flux:profile
                     :name="auth()->user()->name"
@@ -83,9 +99,11 @@
                     </form>
                 </flux:menu>
             </flux:dropdown>
+            @endauth
         </flux:sidebar>
 
         <!-- Mobile User Menu -->
+        @auth
         <flux:header class="lg:hidden">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
@@ -134,6 +152,7 @@
                 </flux:menu>
             </flux:dropdown>
         </flux:header>
+        @endauth
 
         {{ $slot }}
 

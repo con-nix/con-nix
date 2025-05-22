@@ -83,6 +83,7 @@
             pkgs.nss # Required for libnss3.so
             pkgs.sqlite
             pkgs.go
+                            pkgs.frankenphp
             pkgs.tailwindcss-language-server
                             pkgs.htmx-lsp
           ];

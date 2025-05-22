@@ -3,13 +3,13 @@
         <!-- Header -->
         <div class="flex items-center justify-between">
             <div>
-                <div class="flex items-center gap-3">
-                    <div class="h-12 w-12 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
-                        <span class="text-lg font-semibold text-indigo-600">{{ $user->initials() }}</span>
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-zinc-200 dark:bg-zinc-700 rounded-full flex items-center justify-center text-xl font-bold">
+                        {{ substr($user->name, 0, 1) }}
                     </div>
                     <div>
                         <h1 class="text-2xl font-bold">{{ $user->name }}</h1>
-                        <p class="text-neutral-600 dark:text-neutral-400">{{ $user->email }}</p>
+                        <p class="text-zinc-600 dark:text-zinc-400">{{ $user->email }}</p>
                     </div>
                 </div>
             </div>
@@ -19,16 +19,16 @@
                         <form action="{{ route('users.unfollow', $user) }}" method="POST" class="inline">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="inline-flex items-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700">
+                            <flux:button type="submit" variant="ghost" icon="user-minus">
                                 Unfollow
-                            </button>
+                            </flux:button>
                         </form>
                     @else
                         <form action="{{ route('users.follow', $user) }}" method="POST" class="inline">
                             @csrf
-                            <button type="submit" class="inline-flex items-center rounded-md border border-indigo-500 bg-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                            <flux:button type="submit" variant="primary" icon="user-plus">
                                 Follow
-                            </button>
+                            </flux:button>
                         </form>
                     @endif
                 @endif
@@ -36,63 +36,70 @@
         </div>
 
         <!-- Stats -->
-        <div class="flex gap-6 text-sm">
-            <a href="{{ route('users.followers', $user) }}" class="text-neutral-600 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200">
-                <span class="font-semibold">{{ $user->followers_count }}</span> followers
-            </a>
-            <a href="{{ route('users.following', $user) }}" class="text-neutral-600 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200">
-                <span class="font-semibold">{{ $user->following_count }}</span> following
-            </a>
+        <div class="flex gap-6">
+            <flux:button :href="route('users.followers', $user)" variant="ghost" class="font-normal">
+                <flux:badge color="blue">{{ $user->followers_count }}</flux:badge>
+                <span class="ml-2">followers</span>
+            </flux:button>
+            <flux:button :href="route('users.following', $user)" variant="ghost" class="font-normal">
+                <flux:badge color="green">{{ $user->following_count }}</flux:badge>
+                <span class="ml-2">following</span>
+            </flux:button>
         </div>
 
         <!-- Followers List -->
-        <div class="rounded-md bg-white p-4 shadow-sm dark:bg-neutral-800">
-            <h2 class="text-lg font-semibold mb-4">Followers</h2>
+        <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-semibold">Followers</h2>
+                <flux:badge color="blue">{{ $followers->total() }}</flux:badge>
+            </div>
             
-            @forelse($followers as $follower)
-                <div class="flex items-center justify-between py-3 border-b border-neutral-200 dark:border-neutral-700 last:border-b-0">
-                    <div class="flex items-center">
-                        <div class="h-8 w-8 flex-shrink-0 rounded-full bg-neutral-100 flex items-center justify-center dark:bg-neutral-700">
-                            <span class="text-xs font-semibold text-neutral-600 dark:text-neutral-300">{{ $follower->initials() }}</span>
-                        </div>
-                        <div class="ml-3">
-                            <div class="text-sm font-medium text-neutral-900 dark:text-neutral-200">
-                                {{ $follower->name }}
+            <div class="space-y-3">
+                @forelse($followers as $follower)
+                    <div class="flex items-center justify-between p-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-zinc-200 dark:bg-zinc-700 rounded-full flex items-center justify-center text-sm font-medium">
+                                {{ substr($follower->name, 0, 1) }}
                             </div>
-                            <div class="text-sm text-neutral-500 dark:text-neutral-400">
-                                {{ $follower->email }}
+                            <div>
+                                <div class="font-medium">{{ $follower->name }}</div>
+                                <div class="text-sm text-zinc-500">{{ $follower->email }}</div>
                             </div>
                         </div>
+                        
+                        @if(auth()->id() !== $follower->id)
+                            <div>
+                                @if(auth()->user()->isFollowing($follower))
+                                    <form action="{{ route('users.unfollow', $follower) }}" method="POST" class="inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <flux:button type="submit" variant="ghost" size="xs" class="text-zinc-600 hover:text-zinc-900">
+                                            Unfollow
+                                        </flux:button>
+                                    </form>
+                                @else
+                                    <form action="{{ route('users.follow', $follower) }}" method="POST" class="inline">
+                                        @csrf
+                                        <flux:button type="submit" variant="ghost" size="xs" class="text-blue-600 hover:text-blue-700">
+                                            Follow
+                                        </flux:button>
+                                    </form>
+                                @endif
+                            </div>
+                        @endif
                     </div>
-                    
-                    @if(auth()->id() !== $follower->id)
-                        <div>
-                            @if(auth()->user()->isFollowing($follower))
-                                <form action="{{ route('users.unfollow', $follower) }}" method="POST" class="inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-sm text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-300">
-                                        Unfollow
-                                    </button>
-                                </form>
-                            @else
-                                <form action="{{ route('users.follow', $follower) }}" method="POST" class="inline">
-                                    @csrf
-                                    <button type="submit" class="text-sm text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
-                                        Follow
-                                    </button>
-                                </form>
-                            @endif
-                        </div>
-                    @endif
-                </div>
-            @empty
-                <div class="text-center py-8">
-                    <p class="text-neutral-500 dark:text-neutral-400">
-                        {{ $user->name }} doesn't have any followers yet.
-                    </p>
-                </div>
-            @endforelse
+                @empty
+                    <div class="text-center py-12">
+                        <svg class="mx-auto w-12 h-12 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                        </svg>
+                        <h3 class="text-sm font-medium mt-4">No followers yet</h3>
+                        <p class="text-zinc-500 mt-2">
+                            {{ $user->name }} doesn't have any followers yet.
+                        </p>
+                    </div>
+                @endforelse
+            </div>
         </div>
 
         <!-- Pagination -->

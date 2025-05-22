@@ -152,8 +152,8 @@ class User extends Authenticatable
     {
         $personalRepos = $this->repositories();
 
-        $ownedOrgIds = $this->ownedOrganizations()->pluck('id');
-        $memberOrgIds = $this->organizations()->pluck('id');
+        $ownedOrgIds = $this->ownedOrganizations()->pluck('organizations.id');
+        $memberOrgIds = $this->organizations()->pluck('organizations.id');
         
         $allOrgIds = $ownedOrgIds->merge($memberOrgIds)->unique();
 
@@ -188,7 +188,7 @@ class User extends Authenticatable
             $this->following()->attach($user->id);
             
             // Create notification for the followed user
-            $user->notify('user_follow', "{$this->name} started following you", null, [
+            $user->createNotification('user_follow', "{$this->name} started following you", null, [
                 'follower' => $this->only(['id', 'name', 'email']),
             ]);
         }
@@ -229,7 +229,7 @@ class User extends Authenticatable
     /**
      * Create a notification for this user.
      */
-    public function notify(string $type, string $title, ?string $message = null, ?array $data = null, ?string $actionUrl = null): Notification
+    public function createNotification(string $type, string $title, ?string $message = null, ?array $data = null, ?string $actionUrl = null): Notification
     {
         return $this->notifications()->create([
             'type' => $type,
@@ -259,7 +259,7 @@ class User extends Authenticatable
      */
     public function getActivityFeed(int $limit = 50)
     {
-        $followingIds = $this->following()->pluck('id')->toArray();
+        $followingIds = $this->following()->pluck('users.id')->toArray();
         $followingIds[] = $this->id; // Include own activities
         
         return Activity::byUsers($followingIds)

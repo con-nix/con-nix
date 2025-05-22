@@ -16,12 +16,11 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('type');
             $table->text('description');
-            $table->morphs('subject');
+            $table->nullableMorphs('subject');
             $table->json('properties')->nullable();
             $table->timestamps();
             
             $table->index(['user_id', 'created_at']);
-            $table->index(['subject_type', 'subject_id']);
         });
     }
 
