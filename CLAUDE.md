@@ -4,106 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repository contains a Laravel web application with Livewire integration, set up with a Nix development environment. The project is a GitHub-like repository management system with organizations. It uses:
+This repository contains a GitHub-like repository management system built with Laravel 12 and Livewire/Volt. It implements a social coding platform with organizations, repository management, activity feeds, and notification systems.
 
-1. Laravel 12 - PHP web framework
-2. Livewire/Volt - PHP components for building dynamic UIs
-3. Livewire/Flux - Component library for UI components
-4. Vite + Tailwind CSS v4 - Frontend tooling with latest CSS framework
-5. Nix Flake - Development environment configuration
-6. SQLite - Default database for development
+**Core Features:**
+- Repository hosting with user/organization ownership
+- Organization management with member roles and invitations
+- Social features (following users, activity feeds)
+- Repository transfer system between accounts
+- Comprehensive notification system
 
 ## Key Commands
 
-### PHP Development Commands
-
-```bash
-# Install PHP dependencies
-composer install
-
-# Start the complete development environment (server, queue, logs, vite)
-composer dev
-
-# Run tests (clears config cache automatically)
-composer test
-
-# Run a specific test or test class
-php artisan test --filter=TestName
-php artisan test --filter=RepositoryTest
-
-# Run the PHP linter (Laravel Pint)
-./vendor/bin/pint
-
-# Generate application key
-php artisan key:generate
-
-# Run database migrations
-php artisan migrate
-
-# Create a new controller
-php artisan make:controller ControllerName
-
-# Create a new model with migration and factory
-php artisan make:model ModelName -mf
-
-# Start the Laravel server only
-php artisan serve
-```
-
-### Frontend Development Commands
-
-```bash
-# Install JS dependencies
-npm install
-
-# Start the Vite development server only
-npm run dev
-
-# Build for production
-npm run build
-```
-
-### CSS/Styling Troubleshooting
-
-The application uses Tailwind CSS v4 with Livewire Flux components. If CSS styling breaks:
-
-1. **Clear Laravel caches first:**
-
-    ```bash
-    php artisan view:clear
-    php artisan config:clear
-    ```
-
-2. **Remove stale production builds:**
-
-    ```bash
-    rm -rf public/build
-    ```
-
-3. **Rebuild production assets (as fallback):**
-
-    ```bash
-    npm run build
-    ```
-
-4. **Restart development server completely:**
-
-    - Stop `composer dev` (Ctrl+C)
-    - Run `composer dev` again to restart all services
-
-5. **Check Vite dev server connectivity:**
-    ```bash
-    curl -s http://localhost:5173/@vite/client | head -5
-    ```
-
-The CSS configuration includes:
-
-- Tailwind CSS v4 with `@tailwindcss/vite` plugin
-- Flux component library CSS import
-- Custom theme variables for consistent design
-- Dark mode support with custom variant
-
 ### Nix Development Environment
+
+All commands should be run using the Nix development shell:
 
 ```bash
 # Enter the development environment
@@ -113,85 +27,183 @@ nix develop
 direnv allow
 ```
 
-The Nix shell provides:
+### PHP Development Commands
 
-- PHP 8.4
-- Composer
-- PHPStan and Psalm for static analysis
-- PHPUnit for testing
-- Bun for JavaScript package management
-- Prettier for code formatting
+```bash
+# Install PHP dependencies
+nix develop -c composer install
+
+# Start complete development environment (server, queue, logs, vite)
+nix develop -c composer dev
+
+# Run tests with automatic config clearing
+nix develop -c composer test
+
+# Run specific test
+nix develop -c php artisan test --filter=TestName
+
+# Code formatting and linting
+nix develop -c ./vendor/bin/pint
+nix develop -c treefmt
+
+# Laravel commands
+nix develop -c php artisan migrate
+nix develop -c php artisan make:controller ControllerName
+nix develop -c php artisan make:model ModelName -mf
+```
+
+### Frontend Development Commands
+
+```bash
+# Install JS dependencies
+nix develop -c bun install
+
+# Start Vite development server
+nix develop -c bun run dev
+
+# Build for production
+nix develop -c bun run build
+```
+
+### Quick Start Commands
+
+```bash
+# Development
+nix develop -c composer dev    # Start full dev environment
+nix develop -c composer test   # Run test suite
+
+# Production Build & Serve
+nix run .#default             # Build application
+nix run .#serve               # Serve with FrankenPHP
+
+# Containerized Deployment  
+nix run .#docker-load         # Build Docker image
+nix run .#docker-run          # Build and run container
+```
+
+### Production Build and Deployment
+
+#### Option 1: Local Build with FrankenPHP
+
+```bash
+# Build the complete application for production
+nix run .#default
+
+# Serve the built application with FrankenPHP
+nix run .#serve
+
+# Build and serve in sequence
+nix run .#default && nix run .#serve
+```
+
+The build process:
+1. **Installs PHP dependencies** with Composer (production-optimized)
+2. **Installs JavaScript dependencies** with Bun
+3. **Builds frontend assets** with Vite
+4. **Sets up production environment** with proper .env configuration
+5. **Generates application key** for Laravel
+6. **Creates SQLite database** and runs migrations
+7. **Caches configuration** for optimal performance
+
+The built application is stored in `~/.cache/con-nix-build/app` and can be served with FrankenPHP on port 8000.
+
+#### Option 2: Containerized Deployment
+
+```bash
+# Build and load Docker image using Nix
+nix run .#docker-load
+
+# Run the containerized application
+docker run -p 8000:8000 con-nix-laravel:latest
+
+# Or build and run in one command
+nix run .#docker-run
+```
+
+**Container Features:**
+- **Self-contained environment** - All dependencies included via Nix
+- **Runtime build optimization** - Application builds on first container start
+- **Persistent build state** - Subsequent container restarts skip the build process
+- **Production-ready** - Uses FrankenPHP with optimized Laravel configuration
+- **Port 8000** - Application available at http://localhost:8000
+
+**Container Architecture:**
+- Built with `dockerTools.buildLayeredImage` for optimal layer caching
+- Includes PHP 8.4, FrankenPHP, Composer, Bun, and SQLite
+- Runtime build process ensures fresh dependencies while maintaining reproducibility
+- Writable storage and cache directories for Laravel operations
 
 ## Architecture
 
-### Domain Models
+### Domain Model Structure
 
-The application manages a three-tier ownership structure:
+The application uses a three-tier ownership hierarchy:
 
 1. **Users** - Individual accounts that can own repositories and organizations
-2. **Organizations** - Groups owned by users that can own repositories
-3. **Repositories** - Code repositories that can be owned by either users or organizations
+2. **Organizations** - Group entities owned by users, can own repositories and have members
+3. **Repositories** - Code repositories with polymorphic ownership (user OR organization)
 
-Key relationships:
+**Key Relationships:**
+- Users can follow other users and see their activity in feeds
+- Organizations have members with roles (owner, admin, member)
+- Repository transfers allow moving ownership between user accounts and organizations
+- Activity system tracks all user actions for social feeds
+- Notification system handles organization invites, follows, and repository activities
 
-- Users can own multiple organizations and repositories
-- Organizations belong to one user but can own multiple repositories
-- Repositories belong to either a user OR an organization (polymorphic ownership)
-- Repository transfers can move ownership between user and organization accounts
-
-### Authorization System
+### Authorization Pattern
 
 Uses Laravel Policies for granular permissions:
-
 - `RepositoryPolicy` - Controls repository access, editing, deletion, and transfer
-- `OrganizationPolicy` - Controls organization management
+- `OrganizationPolicy` - Controls organization management and member operations
 
-Authorization checks are implemented at the controller level with `can()` methods and in Blade templates with `@can` directives.
+Authorization is enforced at controller level with `can()` methods and in Blade templates with `@can` directives.
 
 ### Frontend Architecture
 
-- **Layouts**: Nested layout system with `app.blade.php` wrapping content in `<flux:main>` and `app/sidebar.blade.php` providing the base structure
-- **Components**: Uses Livewire Flux components (`<flux:button>`, `<flux:field>`, etc.) for consistent UI
-- **Navigation**: Collapsible sidebar with JavaScript toggle functionality
-- **Styling**: Tailwind v4 with custom theme variables and dark mode support
+- **Livewire/Volt** for reactive PHP components (settings pages)
+- **Livewire Flux** component library for consistent UI elements
+- **Tailwind CSS v4** with custom theme variables and dark mode support
+- **Nested layout system** with `app.blade.php` + collapsible sidebar
+- **Vite** for asset compilation with hot reloading
 
 ### Data Layer
 
-- **Models**: Standard Laravel Eloquent models with factory support
-- **Migrations**: Database schema versioning with descriptive migration names
-- **Factories**: Comprehensive model factories for testing and seeding
-- **Database**: SQLite for development, easily configurable for production databases
+- **SQLite** for development (configurable for production databases)
+- **Eloquent models** with comprehensive factory support for testing
+- **Database migrations** with descriptive naming conventions
+- **Activity tracking** through observers for automatic logging
 
-## Testing
+## Repository Transfer System
 
-The test suite follows Laravel conventions:
+Key implementation details for the transfer feature:
+- Transfers require confirmation (user must type repository name exactly)
+- Only repository owners can initiate transfers
+- Can only transfer to organizations the user owns
+- Database updates toggle between `user_id` and `organization_id` fields
+- Accessible via orange "Transfer" button on repository show pages
 
-1. **Feature Tests** - Integration tests for complete user workflows:
+## Testing Strategy
 
-    - Authentication flow testing
-    - Repository CRUD operations
-    - Organization management
-    - Repository transfer functionality
-    - Authorization boundary testing
+- **Feature tests** cover complete user workflows including auth, CRUD operations, and authorization boundaries
+- **Unit tests** for component isolation
+- **In-memory SQLite** for test performance
+- Tests automatically clear configuration cache before running
+- Comprehensive coverage of repository transfer and organization invite workflows
 
-2. **Unit Tests** - Component isolation testing
+## CSS Troubleshooting Workflow
 
-Test database uses in-memory SQLite for performance. Tests automatically clear configuration cache before running.
+If styling breaks with Tailwind v4 + Flux components:
 
-### Repository Transfer Feature
-
-The application includes a repository transfer system allowing users to move repositories between personal accounts and organizations. Key implementation details:
-
-- Transfer form with confirmation requirement (must type repository name)
-- Authorization: only repository owners can transfer, only to organizations they own
-- Database updates: toggles between `user_id` and `organization_id` fields
-- UI: Orange "Transfer" button on repository show pages
-- Routes: `GET /repositories/{repository}/transfer` and `PATCH /repositories/{repository}/transfer`
+1. Clear Laravel caches: `nix develop -c php artisan view:clear && php artisan config:clear`
+2. Remove stale builds: `rm -rf public/build`
+3. Restart dev environment: Stop `composer dev` and restart
+4. Rebuild assets: `nix develop -c bun run build` (fallback)
 
 ## Development Notes
 
-- The application uses Laravel's resource controllers for standard CRUD operations
-- Livewire Volt is used for reactive components in settings pages
 - Repository creation supports both personal and organization ownership via form selection
-- The sidebar includes JavaScript for collapse/expand functionality
+- Organization invites work via public token-based URLs (no auth required for invite pages)
+- Activity feed shows actions from followed users only
+- Notification system includes real-time unread counts via API endpoints
 - All forms use Flux components for consistent styling and validation display
+- Use `nix develop -c <command>` prefix for all development commands

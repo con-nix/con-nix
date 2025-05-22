@@ -47,11 +47,6 @@
               enable = true;
               includes = ["*.js" "*.ts" "*.json" "*.md" "*.css" "*.html" "*.vue"];
             };
-            # PHP formatting
-            php-cs-fixer = {
-              enable = true;
-              includes = ["*.php"];
-            };
             alejandra = {
               enable = true;
             };
@@ -100,6 +95,315 @@
         };
 
         packages = {
+          default = pkgs.writeShellApplication {
+            name = "con-nix-build";
+            
+            runtimeInputs = [
+              php
+              php.packages.composer
+              pkgs.bun
+              pkgs.sqlite
+              pkgs.frankenphp
+            ];
+            
+            text = ''
+              set -e
+              
+              echo "Building Laravel application with Nix..."
+              
+              # Create build directory
+              BUILD_DIR="$HOME/.cache/con-nix-build"
+              APP_DIR="$BUILD_DIR/app"
+              
+              # Remove old build, handling read-only files
+              if [ -d "$BUILD_DIR" ]; then
+                chmod -R u+w "$BUILD_DIR" 2>/dev/null || true
+                rm -rf "$BUILD_DIR"
+              fi
+              mkdir -p "$APP_DIR"
+              
+              # Copy source files (including dotfiles)
+              shopt -s dotglob
+              cp -r ${inputs.self}/* "$APP_DIR/"
+              cd "$APP_DIR"
+              
+              # Make all files writable (since they come from Nix store)
+              chmod -R u+w .
+              
+              # Create required directories first with proper permissions
+              mkdir -p storage/framework/{cache,sessions,testing,views}
+              mkdir -p storage/logs
+              mkdir -p storage/app/{private,public}
+              mkdir -p bootstrap/cache
+              chmod -R 755 storage bootstrap/cache
+              
+              echo "Installing PHP dependencies..."
+              composer install --no-dev --optimize-autoloader --no-interaction
+              
+              echo "Setting up production environment..."
+              cp .env.example .env
+              sed -i 's/APP_ENV=.*/APP_ENV=production/' .env
+              sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env
+              sed -i 's|DB_DATABASE=.*|DB_DATABASE=database/database.sqlite|' .env
+              
+              echo "Generating application key..."
+              php artisan key:generate --force
+              
+              echo "Installing JS dependencies and building assets..."
+              bun install
+              bun run build
+              
+              echo "Creating database and running migrations..."
+              touch database/database.sqlite
+              chmod 644 database/database.sqlite
+              php artisan migrate --force --no-interaction
+              
+              echo "Caching configuration for production..."
+              php artisan config:cache
+              php artisan route:cache
+              php artisan view:cache
+              
+              # Final permission setting
+              chmod -R 755 storage bootstrap/cache
+              
+              echo "Build completed successfully!"
+              echo "Application built in: $APP_DIR"
+              echo ""
+              echo "To run the application:"
+              echo "  nix run .#serve"
+              echo ""
+              echo "Or build and serve in one command:"
+              echo "  nix run .#default && nix run .#serve"
+            '';
+          };
+          
+          # Convenience package to serve the built application
+          serve = pkgs.writeShellApplication {
+            name = "con-nix-serve";
+            
+            runtimeInputs = [
+              php
+              pkgs.frankenphp
+              pkgs.sqlite
+            ];
+            
+            text = ''
+              set -e
+              
+              BUILD_DIR="$HOME/.cache/con-nix-build/app"
+              
+              if [ ! -d "$BUILD_DIR" ]; then
+                echo "Error: Application not built yet. Run 'nix run .#default' first to build."
+                exit 1
+              fi
+              
+              cd "$BUILD_DIR"
+              
+              # Ensure runtime directories are writable
+              chmod -R 755 storage bootstrap/cache
+              
+              echo "Starting FrankenPHP server..."
+              echo "Application will be available at http://localhost:8000"
+              echo "Press Ctrl+C to stop the server"
+              echo ""
+              
+              frankenphp php-server \
+                --listen :8000 \
+                --root public \
+                --access-log
+            '';
+          };
+
+          # Build application as a proper derivation for containerization
+          app = pkgs.stdenv.mkDerivation {
+            pname = "con-nix-laravel-app";
+            version = "1.0.0";
+            
+            src = inputs.self;
+            
+            nativeBuildInputs = [
+              php
+              php.packages.composer
+              pkgs.bun
+              pkgs.sqlite
+            ];
+            
+            configurePhase = ''
+              runHook preConfigure
+              
+              # Make files writable
+              chmod -R u+w .
+              
+              # Create required directories
+              mkdir -p storage/framework/{cache,sessions,testing,views}
+              mkdir -p storage/logs
+              mkdir -p storage/app/{private,public}
+              mkdir -p bootstrap/cache
+              
+              runHook postConfigure
+            '';
+            
+            buildPhase = ''
+              runHook preBuild
+              
+              # Install PHP dependencies
+              composer install --no-dev --optimize-autoloader --no-interaction
+              
+              # Set up production environment
+              cp .env.example .env
+              sed -i 's/APP_ENV=.*/APP_ENV=production/' .env
+              sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env
+              sed -i 's|DB_DATABASE=.*|DB_DATABASE=/app/database/database.sqlite|' .env
+              
+              # Generate application key
+              php artisan key:generate --force
+              
+              # Install JS dependencies and build assets
+              bun install
+              bun run build
+              
+              # Create database and run migrations
+              touch database/database.sqlite
+              chmod 644 database/database.sqlite
+              php artisan migrate --force --no-interaction
+              
+              # Cache configuration
+              php artisan config:cache
+              php artisan route:cache
+              php artisan view:cache
+              
+              runHook postBuild
+            '';
+            
+            installPhase = ''
+              runHook preInstall
+              
+              mkdir -p $out
+              
+              # Copy all application files
+              cp -r . $out/
+              
+              # Set proper permissions
+              chmod -R 755 $out/storage $out/bootstrap/cache
+              chmod 644 $out/database/database.sqlite
+              
+              runHook postInstall
+            '';
+            
+            meta = {
+              description = "Laravel application built for containerization";
+            };
+          };
+
+          # Docker container image using Nix
+          docker = pkgs.dockerTools.buildLayeredImage {
+            name = "con-nix-laravel";
+            tag = "latest";
+            
+            contents = [
+              php
+              pkgs.frankenphp
+              pkgs.sqlite
+              pkgs.bash
+              pkgs.coreutils
+              pkgs.gnused
+              pkgs.fakeNss
+              # Use a script that builds the app at runtime
+              (pkgs.writeShellApplication {
+                name = "build-and-serve";
+                runtimeInputs = [
+                  php
+                  php.packages.composer
+                  pkgs.bun
+                  pkgs.sqlite
+                  pkgs.frankenphp
+                ];
+                text = ''
+                  set -e
+                  
+                  # Only build if not already built
+                  if [ ! -f /app/.built ]; then
+                    echo "Building Laravel application..."
+                    cd /app
+                    
+                    # Install PHP dependencies
+                    composer install --no-dev --optimize-autoloader --no-interaction
+                    
+                    # Set up production environment
+                    cp .env.example .env
+                    sed -i 's/APP_ENV=.*/APP_ENV=production/' .env
+                    sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env
+                    sed -i 's|DB_DATABASE=.*|DB_DATABASE=/app/database/database.sqlite|' .env
+                    
+                    # Generate application key
+                    php artisan key:generate --force
+                    
+                    # Install JS dependencies and build assets
+                    bun install
+                    bun run build
+                    
+                    # Create database and run migrations
+                    touch database/database.sqlite
+                    chmod 644 database/database.sqlite
+                    php artisan migrate --force --no-interaction
+                    
+                    # Cache configuration
+                    php artisan config:cache
+                    php artisan route:cache
+                    php artisan view:cache
+                    
+                    # Mark as built
+                    touch /app/.built
+                    
+                    echo "Build completed!"
+                  fi
+                  
+                  echo "Starting Laravel application with FrankenPHP..."
+                  echo "Application will be available on port 8000"
+                  
+                  cd /app
+                  exec frankenphp php-server \
+                    --listen :8000 \
+                    --root public \
+                    --access-log
+                '';
+              })
+            ];
+            
+            extraCommands = ''
+              # Create app directory and copy source
+              mkdir -p app
+              # Copy all source files
+              ${pkgs.rsync}/bin/rsync -av --exclude='.git' ${inputs.self}/ app/
+              
+              # Make files writable
+              chmod -R u+w app
+              
+              # Create required directories
+              mkdir -p app/storage/framework/{cache,sessions,testing,views}
+              mkdir -p app/storage/logs
+              mkdir -p app/storage/app/{private,public}
+              mkdir -p app/bootstrap/cache
+              mkdir -p tmp
+              
+              # Set proper permissions
+              chmod -R 777 app/storage app/bootstrap/cache tmp
+            '';
+            
+            config = {
+              Cmd = ["build-and-serve"];
+              ExposedPorts = {
+                "8000/tcp" = {};
+              };
+              Env = [
+                "APP_ENV=production"
+                "APP_DEBUG=false"
+                "HOME=/tmp"
+              ];
+              WorkingDir = "/app";
+            };
+          };
+
           satis = php.buildComposerProject {
             pname = "satis";
             version = "3.0.0-dev";
@@ -224,20 +528,68 @@
         };
 
         apps = {
-          mezzio-skeleton = {
+          default = {
+            type = "app";
+            program = lib.getExe self'.packages.default;
+          };
+          
+          serve = {
+            type = "app";
+            program = lib.getExe self'.packages.serve;
+          };
+          
+          docker-load = {
             type = "app";
             program = lib.getExe (
               pkgs.writeShellApplication {
-                name = "mezzio-skeleton-demo";
-
-                runtimeInputs = [php];
-
+                name = "docker-load";
+                
+                runtimeInputs = [
+                  pkgs.docker
+                ];
+                
                 text = ''
-                  ${lib.getExe php} -S 0.0.0.0:8080 -t ${self'.packages.mezzio}/share/php/${self'.packages.mezzio.pname}/public/
+                  set -e
+                  
+                  echo "Building Docker image with Nix..."
+                  nix build .#docker
+                  
+                  echo "Loading image into Docker..."
+                  docker load < result
+                  
+                  echo "Docker image loaded successfully!"
+                  echo "Run with: docker run -p 8000:8000 con-nix-laravel:latest"
                 '';
               }
             );
           };
+          
+          docker-run = {
+            type = "app";
+            program = lib.getExe (
+              pkgs.writeShellApplication {
+                name = "docker-run";
+                
+                runtimeInputs = [
+                  pkgs.docker
+                ];
+                
+                text = ''
+                  set -e
+                  
+                  echo "Building and loading Docker image..."
+                  nix run .#docker-load
+                  
+                  echo "Starting container..."
+                  echo "Application will be available at http://localhost:8000"
+                  echo "Press Ctrl+C to stop the container"
+                  
+                  docker run --rm -p 8000:8000 con-nix-laravel:latest
+                '';
+              }
+            );
+          };
+
 
           symfony-demo = {
             type = "app";
